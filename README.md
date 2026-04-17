@@ -1,2 +1,2 @@
-# my-code-examples
-A collection of code examples and tests
+# My Code Examples And Tests
+A collection of experimental or theorical code examples and tests
