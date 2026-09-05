@@ -2,22 +2,22 @@ pub trait IRow
 {
 }
 
-pub trait IQuery<Row: IRow>
+pub trait IQuery<'a, Row: IRow>
 {
-    fn get() -> Vec<Row>;
+    fn get_rows(&mut self) -> Vec<&'a mut Row>;
+    fn get_first(&mut self) -> &'a mut Row;
 }
 
-pub trait ITable<Row: IRow>
+pub trait ITable<'a, Row: IRow>
 {
     fn new() -> Self;
     fn add(&mut self, row: Row) -> ();
-    fn query(&self) -> Query<Row>;
+    fn query(&mut self) -> Query<'a, Row>;
 }
 
-#[derive(Clone)]
-pub struct Query<Row: IRow>
+pub struct Query<'a, Row: IRow>
 {
-    rows: Vec<Row>
+    rows: Vec<&'a mut Row>
 }
 
 macro_rules! make_table
@@ -49,6 +49,19 @@ macro_rules! make_table
             impl IRow for Row
             {
             }
+
+            impl IQuery<Row> for Query<'_, Row>
+            {
+                fn get_rows(&mut self) -> Vec<&mut Row>
+                {
+                    self.rows.iter_mut().map(|x| &mut **x).collect()
+                }
+
+                fn get_first(&mut self) -> &mut Row
+                {
+                    self.rows[0]
+                }
+            }
            
             impl ITable<Row> for Table
             {
@@ -62,9 +75,9 @@ macro_rules! make_table
                     self.rows.push(row);
                 }
            
-                fn query(&self) -> Query<Row>
+                fn query(&mut self) -> Query<'a, Row>
                 {
-                    Query { rows: self.rows.clone() }
+                    Query { rows: self.rows.iter_mut().collect() }
                 }
             }
            
@@ -83,6 +96,7 @@ macro_rules! make_table
 make_table!{
     my_table
     {
+        handle: String,
         name: String
     }
 }
@@ -94,12 +108,12 @@ fn main()
    
     let mut table = my_table::Table::new();
    
-    table.add_row(String::from("Hello"));
-    table.add_row(String::from("Hellow"));
-    table.add_row(String::from("Helloo"));
+    table.add_row(String::from("hello123"), String::from("Hello,"));
+    table.add_row(String::from("w0rld"), String::from("World!"));
+    table.add_row(String::from("interrobang"), String::from("?!"));
    
-    for x in table.query().rows
+    for x in table.query().get_rows()
     {
-        println!("{}: {}", x.id, x.name)
+        println!("{}: \"{}\" \"{}\"", x.id, x.handle, x.name)
     }
 }
